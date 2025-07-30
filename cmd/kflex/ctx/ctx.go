@@ -132,17 +132,15 @@ func (cpCtx *CPCtx) ExecuteCtx(chattyStatus, failIfNone, overwriteExistingCtx, s
 			util.PrintStatus("Overwriting existing context for control plane", done, &wg, chattyStatus)
 			if err = kubeconfig.DeleteAll(kconf, cpCtx.Name); err != nil {
 				if cpCtx.verbose > 0 {
-					fmt.Fprintf(os.Stderr, "context %s not found in kubeconfig(this is OK for new control planes first time overwriting their context)\nmessage: %s\n", cpCtx.Name, err)
+					fmt.Fprintf(os.Stderr, "context %s not found in kubeconfig: %s\n", cpCtx.Name, err)
 				}
 			}
 			done <- true
 		}
 		util.PrintStatus(fmt.Sprintf("Switching to context %s...", cpCtx.Name), done, &wg, chattyStatus)
 		if err = kubeconfig.SwitchContext(kconf, cpCtx.Name); err != nil {
-			if overwriteExistingCtx {
-				if cpCtx.verbose > 0 {
-					fmt.Fprintf(os.Stderr, "trying to load new context %s from server...\n", cpCtx.Name)
-				}
+			if overwriteExistingCtx && cpCtx.verbose > 0 {
+				fmt.Printf("trying to load new context %s from server...\n", cpCtx.Name)
 			} else {
 				fmt.Fprintf(os.Stderr, "kubeconfig context %s not found (%s), trying to load from server...\n", cpCtx.Name, err)
 			}
