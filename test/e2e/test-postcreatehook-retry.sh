@@ -97,6 +97,14 @@ kubectl get controlplane cp-missing-hook-${CP_TYPE} -o jsonpath='{.status}' | jq
 
 :
 : -------------------------------------------------------------------------
+: Clean up any existing test resources
+:
+echo "Cleaning up any existing resources..."
+kubectl delete controlplane cp-missing-hook-${CP_TYPE} --ignore-not-found=true
+kubectl delete postcreatehook missing-hook-${CP_TYPE} --ignore-not-found=true
+
+:
+: -------------------------------------------------------------------------
 : SUCCESS: Verified retry logic for missing PostCreateHook
 :
 echo "SUCCESS: ${CP_TYPE} PostCreateHook retry test completed"

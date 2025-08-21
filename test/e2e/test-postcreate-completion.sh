@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 
 CP_TYPE=${1:-k8s}
+
+set -x # echo commands for better debugging
+set -e # exit on error
+
 echo "🧪 Testing PostCreateHook completion behavior with ${CP_TYPE} control plane..."
 
 echo ""
@@ -80,6 +84,12 @@ kubectl get controlplane cp-wait-false-${CP_TYPE} -o jsonpath='{.status}' | jq '
 echo ""
 echo "📋 Summary:"
 kubectl get cp cp-wait-true-${CP_TYPE} cp-wait-false-${CP_TYPE}
+
+echo ""
+echo "🧹 Cleaning up any existing resources..."
+kubectl delete controlplane cp-wait-true-${CP_TYPE} --ignore-not-found=true
+kubectl delete controlplane cp-wait-false-${CP_TYPE} --ignore-not-found=true
+kubectl delete postcreatehook demo-hook-${CP_TYPE} --ignore-not-found=true
 
 echo "" 
 echo "✅ SUCCESS: ${CP_TYPE} PostCreateHook completion test completed"

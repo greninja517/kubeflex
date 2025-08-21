@@ -112,4 +112,11 @@ kubectl --context kind-kubeflex wait --for=condition=Ready controlplane/${CP_NAM
 :
 kubectl --context kind-kubeflex wait --for=condition=Complete job/validation-${CP_NAME} -n ${CP_NAME}-system --timeout=150s
 
+:
+: -------------------------------------------------------------------------
+: Clean up any existing resources
+:
+kubectl --context kind-kubeflex delete controlplane ${CP_NAME} --ignore-not-found=true
+kubectl --context kind-kubeflex delete postcreatehook kubeconfig-test-${CP_TYPE} --ignore-not-found=true
+
 echo "SUCCESS: ${CP_TYPE} PostCreateHook kubeconfig access test completed"
