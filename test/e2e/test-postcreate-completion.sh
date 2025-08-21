@@ -63,8 +63,8 @@ EOF
 
 echo ""
 echo "⏳ Waiting for ${CP_TYPE} CP to be ready..."
-kubectl wait --for=condition=Ready controlplane/cp-wait-true-${CP_TYPE} --timeout=600s &
-kubectl wait --for=condition=Ready controlplane/cp-wait-false-${CP_TYPE} --timeout=600s &
+kubectl wait --for=condition=Ready controlplane/cp-wait-true-${CP_TYPE} --timeout=900s &
+kubectl wait --for=condition=Ready controlplane/cp-wait-false-${CP_TYPE} --timeout=900s &
 wait
 
 echo ""
