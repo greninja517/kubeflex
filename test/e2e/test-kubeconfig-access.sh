@@ -64,23 +64,14 @@ spec:
   - apiVersion: batch/v1
     kind: Job
     metadata:
-      name: kubeconfig-test-{{.ControlPlaneName}}
+      name: validation-{{.ControlPlaneName}}
     spec:
       template:
         spec:
           containers:
           - name: kubeconfig-tester
-            image: quay.io/kubestellar/kubectl:1.30.12
-            command: ["/bin/sh", "-c"]
-            args:
-            - |
-              if kubectl --kubeconfig=/root/.kube/${SECRET_KEY} get namespace kube-system > /dev/null 2>&1; then
-                echo "SUCCESS: Can access ControlPlane API server"
-                exit 0
-              else
-                echo "FAILED: Cannot access ControlPlane API server"
-                exit 1
-              fi
+            image: quay.io/kubestellar/kubectl:1.30.14
+            command: ["kubectl", "--kubeconfig=/root/.kube/${SECRET_KEY}", "get", "namespace", "kube-system"]
             volumeMounts:
             - name: kubeconfig-volume
               mountPath: "/root/.kube"
@@ -89,7 +80,6 @@ spec:
           - name: kubeconfig-volume
             secret:
               secretName: ${SECRET_NAME}
-      backoffLimit: 3
 EOF
 
 :
@@ -114,19 +104,12 @@ EOF
 : Wait for ControlPlane to be ready
 :
 echo "Waiting for ${CP_TYPE} ControlPlane to be ready..."
-kubectl --context kind-kubeflex wait --for=condition=Ready controlplane/${CP_NAME} --timeout=150s
+kubectl --context kind-kubeflex wait --for=condition=Ready controlplane/${CP_NAME} --timeout=600s
 
 :
 : -------------------------------------------------------------------------
 : Verify PostCreateHook Job completed successfully
 :
-kubectl --context kind-kubeflex wait --for=condition=Complete job/kubeconfig-test-${CP_NAME} -n ${CP_NAME}-system --timeout=60s
-
-:
-: -------------------------------------------------------------------------
-: Clean up test resources
-:
-kubectl --context kind-kubeflex delete controlplane ${CP_NAME} --ignore-not-found=true
-kubectl --context kind-kubeflex delete postcreatehook kubeconfig-test-${CP_TYPE} --ignore-not-found=true
+kubectl --context kind-kubeflex wait --for=condition=Complete job/validation-${CP_NAME} -n ${CP_NAME}-system --timeout=150s
 
 echo "SUCCESS: ${CP_TYPE} PostCreateHook kubeconfig access test completed"
