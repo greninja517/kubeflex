@@ -13,15 +13,34 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-SRC_DIR="$(cd $(dirname "${BASH_SOURCE[0]}") && pwd)"
-source "${SRC_DIR}/setup-shell.sh"
-
-# Accept control plane type as parameter
-CP_TYPE=${1:-k8s}
-CP_NAME="kubeconfig-test-${CP_TYPE}"
-
 set -e # exit on error
 set -x # for debugging
+
+CP_TYPE="k8s"
+DEBUG=false
+
+while (( $# > 0 )); do
+  case "$1" in
+  (-t|--type)
+    if (( $# > 1 ));
+    then { CP_TYPE="$2"; shift 2; }
+    else { echo "missing value for controlplane type" >&2; exit 1; }
+    fi;;
+  (-d|--debug)
+    DEBUG=true
+    shift;;
+  (-*)
+    echo "unknown flag: $1" >&2
+    exit 1;;
+  (*)
+    echo "unknown positional argument: $1" >&2
+    exit 1;;
+  esac
+done
+
+CP_NAME="kubeconfig-test-${CP_TYPE}"
+SRC_DIR="$(cd $(dirname "${BASH_SOURCE[0]}") && pwd)"
+source "${SRC_DIR}/setup-shell.sh"
 
 echo "Testing kubeconfig access via PostCreateHook for ${CP_TYPE}..."
 
@@ -112,11 +131,13 @@ kubectl --context kind-kubeflex wait --for=condition=Ready controlplane/${CP_NAM
 :
 kubectl --context kind-kubeflex wait --for=condition=Complete job/validation-${CP_NAME} -n ${CP_NAME}-system --timeout=150s
 
-:
-: -------------------------------------------------------------------------
-: Clean up any existing resources
-:
-kubectl --context kind-kubeflex delete controlplane ${CP_NAME} --ignore-not-found=true
-kubectl --context kind-kubeflex delete postcreatehook kubeconfig-test-${CP_TYPE} --ignore-not-found=true
+if [[ "$DEBUG" != "true" ]]; then
+  :
+  : -------------------------------------------------------------------------
+  : Clean up any existing resources
+  :
+  kubectl --context kind-kubeflex delete controlplane ${CP_NAME} --ignore-not-found=true
+  kubectl --context kind-kubeflex delete postcreatehook kubeconfig-test-${CP_TYPE} --ignore-not-found=true
+fi
 
 echo "SUCCESS: ${CP_TYPE} PostCreateHook kubeconfig access test completed"

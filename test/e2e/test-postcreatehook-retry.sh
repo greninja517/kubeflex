@@ -13,14 +13,35 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-CP_TYPE=${1:-k8s}
+set -x # echo commands for better debugging
+set -e # exit on error
+
+CP_TYPE="k8s"
+DEBUG=false
+
+while (( $# > 0 )); do
+  case "$1" in
+  (-t|--type)
+    if (( $# > 1 ));
+    then { CP_TYPE="$2"; shift 2; }
+    else { echo "missing value for controlplane type" >&2; exit 1; }
+    fi;;
+  (-d|--debug)
+    DEBUG=true
+    shift;;
+  (-*)
+    echo "unknown flag: $1" >&2
+    exit 1;;
+  (*)
+    echo "unknown positional argument: $1" >&2
+    exit 1;;
+  esac
+done
+
 echo "Testing PostCreateHook retry logic with ${CP_TYPE} control plane..."
 
 SRC_DIR="$(cd $(dirname "${BASH_SOURCE[0]}") && pwd)"
 source "${SRC_DIR}/setup-shell.sh"
-
-set -x # echo commands for better debugging
-set -e # exit on error
 
 :
 : -------------------------------------------------------------------------
@@ -95,13 +116,15 @@ kubectl wait --for=condition=Ready controlplane/cp-missing-hook-${CP_TYPE} --tim
 echo "FINAL STATUS:"
 kubectl get controlplane cp-missing-hook-${CP_TYPE} -o jsonpath='{.status}' | jq '.'
 
-:
-: -------------------------------------------------------------------------
-: Clean up any existing test resources
-:
-echo "Cleaning up any existing resources..."
-kubectl delete controlplane cp-missing-hook-${CP_TYPE} --ignore-not-found=true
-kubectl delete postcreatehook missing-hook-${CP_TYPE} --ignore-not-found=true
+if [[ "$DEBUG" != "true" ]]; then
+  :
+  : -------------------------------------------------------------------------
+  : Clean up any existing test resources
+  :
+  echo "Cleaning up any existing resources..."
+  kubectl delete controlplane cp-missing-hook-${CP_TYPE} --ignore-not-found=true
+  kubectl delete postcreatehook missing-hook-${CP_TYPE} --ignore-not-found=true
+fi
 
 :
 : -------------------------------------------------------------------------

@@ -1,9 +1,29 @@
 #!/usr/bin/env bash
 
-CP_TYPE=${1:-k8s}
-
 set -x # echo commands for better debugging
 set -e # exit on error
+
+CP_TYPE="k8s"
+DEBUG=false
+
+while (( $# > 0 )); do
+  case "$1" in
+  (-t|--type)
+    if (( $# > 1 ));
+    then { CP_TYPE="$2"; shift 2; }
+    else { echo "missing value for controlplane type" >&2; exit 1; }
+    fi;;
+  (-d|--debug)
+    DEBUG=true
+    shift;;
+  (-*)
+    echo "unknown flag: $1" >&2
+    exit 1;;
+  (*)
+    echo "unknown positional argument: $1" >&2
+    exit 1;;
+  esac
+done
 
 echo "🧪 Testing PostCreateHook completion behavior with ${CP_TYPE} control plane..."
 
@@ -85,11 +105,13 @@ echo ""
 echo "📋 Summary:"
 kubectl get cp cp-wait-true-${CP_TYPE} cp-wait-false-${CP_TYPE}
 
-echo ""
-echo "🧹 Cleaning up any existing resources..."
-kubectl delete controlplane cp-wait-true-${CP_TYPE} --ignore-not-found=true
-kubectl delete controlplane cp-wait-false-${CP_TYPE} --ignore-not-found=true
-kubectl delete postcreatehook demo-hook-${CP_TYPE} --ignore-not-found=true
+if [[ "$DEBUG" != "true" ]]; then
+  echo ""
+  echo "🧹 Cleaning up any existing resources..."
+  kubectl delete controlplane cp-wait-true-${CP_TYPE} --ignore-not-found=true
+  kubectl delete controlplane cp-wait-false-${CP_TYPE} --ignore-not-found=true
+  kubectl delete postcreatehook demo-hook-${CP_TYPE} --ignore-not-found=true
+fi
 
 echo "" 
 echo "✅ SUCCESS: ${CP_TYPE} PostCreateHook completion test completed"
